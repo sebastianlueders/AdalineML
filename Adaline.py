@@ -14,7 +14,7 @@ class Adaline:
     def fit(self, t_data, targets):
 
         rand_gen = np.random.RandomState(self.rand_seed)  
-        self.weights_ = rgen.normal(loc=0.0, scale=0.01, size=1 + t_data.shape[1])
+        self.weights_ = rand_gen.normal(loc=0.0, scale=0.01, size=1 + t_data.shape[1])
 
         self.costs_ = []
 
