@@ -69,24 +69,47 @@ class Perceptron(LinearModelBase):
     
 def csv_to_numpy(file):
     return np.genfromtxt(file, delimiter=',', skip_header=1)
+
+def get_column_numbers(prompt):
+    user_input = input(prompt)
+    if user_input.strip() == "":
+        return []
+    else:
+        return [int(col) - 1 for col in user_input.split()]
     
-if __name__ == "__main__":
-    td_file = input("What is the name of the csv file you'd like to use for training (Must be located in program's directory & have targets as last entry)? \n")
+def process_data(t_data):
+    target_col = int(input("\n\nEnter the column number (starting at 1) of the target values: ")) - 1
+
+    unique_id_col = int(input("\n\nEnter the column number (starting at 1) of the unique IDs: ")) - 1
+
+    irrelevant_cols = get_column_numbers("\n\nEnter column numbers to exclude from the training dataset seperated by spaces, or press Enter for none: ")
+
+    remove_columns = set([target_col, unique_id_col] + irrelevant_cols)
+
+    X = np.delete(t_data, list(remove_columns), axis=1)
+    Y = t_data[:, target_col]
+
+    return X, Y, target_col, unique_id_col, irrelevant_cols
+
+def run_program():
+    print("\n\n************** COMP 379 HW2 | Lueders, Sebastian **************\n\n\n")
+    
+    
+    td_file = input("What is the name of the csv file you'd like to use for training (Must be located in program's directory)?: ")
     t_data = csv_to_numpy(td_file)
 
-    X = t_data[:, :-1]
-    y = t_data[:, -1]
+    TX, TY, target_col, unique_id_col, irrelevant_cols = process_data(t_data)
 
-    model_choice = input("Would you like to use an adaline or perceptron model?(adaline/perceptron): ").lower()
+    model_choice = input("\n\nWould you like to use an adaline or perceptron model?(adaline/perceptron): ").lower()
 
     if model_choice not in ['adaline', 'perceptron']:
         raise ValueError("Unknown Model Type Selected")
     
-    lr = float(input("What learning rate would you like to use? (0.0-1.0): "))
+    lr = float(input("\n\nWhat learning rate would you like to use? (0.0-1.0): "))
     if not (0.0 <= lr <= 1.0):
         raise ValueError("Learning Rate must be between 0.0 & 1.0")
     
-    epochs = int(input("How many epochs?: "))
+    epochs = int(input("\n\nHow many epochs?: "))
     if epochs < 1:
         raise ValueError("Number of epochs must be greater than or equal to 1.")
     
@@ -95,32 +118,50 @@ if __name__ == "__main__":
     else:
         model = Perceptron(lr, epochs)
     
-    model.fit(X, y)
+    print("\nTraining Model...")
+    model.fit(TX, TY)
 
-    p_file = input("What is the name of the csv file you'd like to use for testing (Must be located in program's directory)? \n")
+    p_file = input("\n\n\nWhat is the name of the csv file you'd like to use for testing (Must be located in program's directory & non-target columns must be ordered exactly the same as the training dataset)? \n")
     p_data = csv_to_numpy(p_file)
-    target_location = int(input("Please enter the column number of the target values or 0 if they are not included in the dataset: "))
+    targets_present = input("\n\nAre the target values saved within a column in this dataset(yes/no): ").lower().strip()
 
-    if target_location == 0:
-        PX = p_data
+    if targets_present == "no":
+        targets_present = 0
+    elif targets_present == "yes":
+        targets_present = 1
+    else:
+        raise ValueError("Input for target value existance must be 'yes' or 'no'")
+
+
+    if targets_present == 0:
+        if (unique_id_col > target_col):
+            unique_id_col += -1
+        
+        for col in irrelevant_cols:
+            if col > target_col:
+                col += -1
+        
+        columns_to_remove = set([unique_id_col] + irrelevant_cols)
+        
+        PX = np.delete(p_data, list(columns_to_remove), axis=1)
         predictions = model.predict(PX)
     else:
-        target_location += -1
-        PX = np.delete(p_data, target_location, axis=1)
-        PY = p_data[:, target_location]
+        columns_to_remove = set([target_col, unique_id_col] + irrelevant_cols)
+        PX = np.delete(p_data, list(columns_to_remove), axis=1)
+        PY = p_data[:, target_col]
         predictions = model.predict(PX)
         accuracy = model.check_accuracy(predictions, PY)
-        print(f"Accuracy Rate: {accuracy * 100:.2f}%")
+        print(f"\n\n*** Accuracy Rate: {accuracy * 100:.2f}%")
     
-    record_output = input("Would you like to save the model output in a seperate file?(y/n): ").lower().strip()
+    record_output = input("\n\nWould you like to save the model output in a seperate file?(y/n): ").lower().strip()
 
     if record_output == 'n':
-        print("Goodbye!")
+        print("\nExiting Program...\n\n")
     elif record_output != 'y':
         raise ValueError("Invalid output, must be 'y' or 'n'")
     else:
-        ofile_name = input("Please input the proposed filename (without extension): ") + ".csv"
-        id_col = int(input("Which row of the csv file used for prediction is the sample's unique identifer located? (Starting at 1): ")) - 1
+        ofile_name = input("\n\nPlease input the proposed filename (without extension): ") + ".csv"
+        id_col = int(input("\n\nWhich row of the csv file used for prediction is the sample's unique identifer located? (Starting at 1): ")) - 1
         with open(p_file, mode='r') as file:
             reader = csv.reader(file)
             headers = next(reader)
@@ -141,7 +182,10 @@ if __name__ == "__main__":
             for uid, prediction in zip(unique_ids, predictions):
                 writer.writerow([uid, prediction])
     
-        print(f"Predictions saved to {ofile_name}")
+        print(f"\n\nPredictions saved to {ofile_name}")
+    
+if __name__ == "__main__":
+    run_program()
 
     
     
