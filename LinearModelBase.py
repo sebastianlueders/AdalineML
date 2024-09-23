@@ -60,15 +60,15 @@ class Perceptron(LinearModelBase):
 
         for i in range(self.epochs):
             for xi, target in zip(t_data, targets):
-                update = self.lr * (target - self.predict(xi)) #
-                self.weights[1:] += update * xi
-                self.weights_[0] += update
+                update = self.lr * (target - self.predict(xi)) #Calculates error times lr
+                self.weights_[1:] += update * xi #Accounts for multiplying by xi before incrementing the weights
+                self.weights_[0] += update #Since x0 would equal 1, updates bias without needing x0
         return self
             
 
     
 def csv_to_numpy(file):
-    return np.loadtxt(file, delimiter=',')
+    return np.genfromtxt(file, delimiter=',', skip_header=1)
     
 if __name__ == "__main__":
     td_file = input("What is the name of the csv file you'd like to use for training (Must be located in program's directory & have targets as last entry)? \n")
@@ -77,34 +77,27 @@ if __name__ == "__main__":
     X = t_data[:, :-1]
     y = t_data[:, -1]
 
-    model_choice = input("Would you like to use an adaline or perceptron model?: ").lower()
+    model_choice = input("Would you like to use an adaline or perceptron model?(adaline/perceptron): ").lower()
 
+    if model_choice not in ['adaline', 'perceptron']:
+        raise ValueError("Unknown Model Type Selected")
+    
+    lr = float(input("What learning rate would you like to use? (0.0-1.0): "))
+    if not (0.0 <= lr <= 1.0):
+        raise ValueError("Learning Rate must be between 0.0 & 1.0")
+    
+    epochs = int(input("How many epochs?: "))
+    if epochs < 1:
+        raise ValueError("Number of epochs must be greater than or equal to 1.")
+    
     if model_choice == 'adaline':
-        lr = input("What learning rate would you like to use? (0.0 - 1.0): ")
-        if 0.0 <= lr <= 1.0:
-            epochs = input("How many epochs?: ")
-            if epochs >= 1:
-                model = Adaline(lr, int(epochs))
-            else:
-                raise ValueError("Number of epochs must be greater than one.\n")
-        else:
-            raise ValueError("Learning Rate must be between 0.0 & 1.0\n")
-    elif model_choice == 'perceptron':
-        lr = input("What learning rate would you like to use? (0.0 - 1.0): ")
-        if 0.0 <= lr <= 1.0:
-            epochs = input("How many epochs?: ")
-            if epochs >= 1:
-                model = Adaline(lr, int(epochs))
-            else:
-                raise ValueError("Number of epochs must be greater than one.\n")
-        else:
-            raise ValueError("Learning Rate must be between 0.0 & 1.0\n")
+        model = Adaline(lr, epochs)
     else:
-        raise ValueError("Unknown model type selected.\n")
+        model = Perceptron(lr, epochs)
     
     model.fit(X, y)
 
-    p_file = input("What is the name of the csv file you'd like to use for testing (Must be located in program's directory & have targets as second entry)? \n")
+    p_file = input("What is the name of the csv file you'd like to use for testing (Must be located in program's directory)? \n")
     p_data = csv_to_numpy(p_file)
     target_location = int(input("Please enter the column number of the target values or 0 if they are not included in the dataset: "))
 
@@ -141,7 +134,7 @@ if __name__ == "__main__":
         if len(unique_ids) != len(predictions):
             raise ValueError("Number of predictions does not match the number of samples provided.")
 
-        with open(ofile_name, mode='w', newLine='') as file:
+        with open(ofile_name, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([id_name, "Prediction"])
             
