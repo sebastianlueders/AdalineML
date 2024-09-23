@@ -1,6 +1,6 @@
 # AdalineML
 
-Adaline Model Build Sourced from Python Machine Learning by Sebastian Raschka 
+Adaline Model Template Sourced from Python Machine Learning by Sebastian Raschka 
 
 
 
