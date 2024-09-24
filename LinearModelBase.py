@@ -34,6 +34,12 @@ class LinearModelBase:
     def check_accuracy(self, results, targets):
         correct = np.sum(results == targets)
         return correct / len(targets)
+    
+    def log_weights(self, weights):
+        with open('weights.csv', mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(weights)
+
 
 
 class Adaline(LinearModelBase):
@@ -49,6 +55,7 @@ class Adaline(LinearModelBase):
             errors = (targets - output) #Creates a vector to store the difference/error of each row
             self.weights_[1:] += self.lr * t_data.T.dot(errors) #Updates the weight by multiplying lr by error by feature value & adding to original weight value
             self.weights_[0] += self.lr * errors.sum() #Updates the bias by multiplying lr by the sum of all sample errors & adding to current bias value
+            self.log_weights(self.weights_)
             cost = (errors ** 2).sum() / 2.0 #Calculates the cost/loss of this epoch iteration
             self.costs_.append(cost) #Adds this epoch's cost value to the costs vector
         return self
@@ -63,6 +70,7 @@ class Perceptron(LinearModelBase):
                 update = self.lr * (target - self.predict(xi)) #Calculates error times lr
                 self.weights_[1:] += update * xi #Accounts for multiplying by xi before incrementing the weights
                 self.weights_[0] += update #Since x0 would equal 1, updates bias without needing x0
+            self.log_weights(self.weights_)
         return self
             
 
